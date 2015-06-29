@@ -26,13 +26,12 @@ class DiscoveryActor(address:String, interface:Option[String], port:Int) extends
 	val log = Logging(context.system, this)
 	var broadcastCount = 0
 	val SEARCH = "M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:"+port+"\r\nMAN: \"ssdp:discover\"\r\nMX: 1\r\nST: urn:schemas-upnp-org:device:ZonePlayer:1"
-
 	import context.system
 	val opts = List(InetV4ProtocolFamily(), MulticastGroup(address, interface))
 	//send a message to bind this actor to the socket address
 	def receive:Receive = {
 		case StartDiscovery() =>
-			val socketAddress = new InetSocketAddress(address, port)
+			val socketAddress = new InetSocketAddress(port)
 			IO(Udp) ! Udp.Bind(self, socketAddress,opts)
 			context.become(awaitUdpBind(socketAddress))
 	}
