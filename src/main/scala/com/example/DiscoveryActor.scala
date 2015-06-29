@@ -3,6 +3,8 @@ package com.example
 import java.net._
 import java.nio.channels.DatagramChannel
 
+import akka.event.Logging
+
 import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -20,7 +22,8 @@ import akka.io.Inet.{SocketOptionV2, DatagramChannelCreator}
  * Time: 9:54 PM
  * To change this template use File | Settings | File Templates.
  */
-class DiscoveryActor(address:String, interface:String, port:Int) extends Actor{
+class DiscoveryActor(address:String, interface:Option[String], port:Int) extends Actor{
+	val log = Logging(context.system, this)
 
 	val SEARCH = "M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:"+port+"\r\nMAN: \"ssdp:discover\"\r\nMX: 1\r\nST: urn:schemas-upnp-org:device:ZonePlayer:1"
 
@@ -73,11 +76,21 @@ final case class InetV4ProtocolFamily() extends DatagramChannelCreator {
 	override def create(): DatagramChannel = DatagramChannel.open(StandardProtocolFamily.INET)
 }
 //Multicast group settings
-final case class MulticastGroup(address:String, interface:String) extends SocketOptionV2 {
+final case class MulticastGroup(address:String, interface:Option[String]) extends SocketOptionV2 {
 	override def afterBind(socket: DatagramSocket): Unit = {
 		val group = InetAddress.getByName(address)
-		val networkInterface = NetworkInterface.getByName(interface)
-		socket.getChannel.join(group, networkInterface)
+		val networkInterface:Seq[NetworkInterface] = interface match {
+			case Some(iface) => Seq(NetworkInterface.getByName(iface))
+			case None =>
+				import scala.collection.JavaConversions._
+				val interfaces = NetworkInterface.getNetworkInterfaces filter  { i => i.isUp && i.supportsMulticast()}
+				interfaces.toSeq
+		}
+		networkInterface foreach { interface =>
+			println(s"Joining group on ${interface.getDisplayName}")
+			socket.getChannel.join(group, interface)
+		}
+
 	}
 }
 
@@ -86,5 +99,6 @@ case class OnTimeout()
 case class Processed(data:ByteString)
 
 object DiscoveryActor {
-	def props(address:String, interface:String, port:Int) = Props(new DiscoveryActor(address, interface, port))
+	def props(address:String, interface:String, port:Int) = Props(new DiscoveryActor(address, Some(interface), port))
+	def props(address:String, port:Int) = Props(new DiscoveryActor(address, None, port))
 }
