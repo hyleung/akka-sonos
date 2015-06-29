@@ -24,7 +24,7 @@ import akka.io.Inet.{SocketOptionV2, DatagramChannelCreator}
  */
 class DiscoveryActor(address:String, interface:Option[String], port:Int) extends Actor{
 	val log = Logging(context.system, this)
-
+	var broadcastCount = 0
 	val SEARCH = "M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:"+port+"\r\nMAN: \"ssdp:discover\"\r\nMX: 1\r\nST: urn:schemas-upnp-org:device:ZonePlayer:1"
 
 	import context.system
@@ -41,7 +41,7 @@ class DiscoveryActor(address:String, interface:Option[String], port:Int) extends
 			println("Bound, awaiting discovery...")
 			sendSearchDatagram(socket)
 			context.become(ready(sender(), socket))
-			context.system.scheduler.scheduleOnce(50 milli,self, OnTimeout())
+			context.system.scheduler.scheduleOnce(1000 milli,self, OnTimeout())
 	}
 
 	def ready(sender:ActorRef, socket:InetSocketAddress):Receive = {
@@ -49,11 +49,12 @@ class DiscoveryActor(address:String, interface:Option[String], port:Int) extends
 			//println("Resending search datagram")
 			sendSearchDatagram(socket)
 			//schedule the next timeout
-			context.system.scheduler.scheduleOnce(50 milli,self, OnTimeout())
+			context.system.scheduler.scheduleOnce(1000 milli,self, OnTimeout())
 		case Udp.Received(data,socketAddress) =>
 			val response = data.decodeString("UTF-8")
 			if ((response contains "Sonos")  && (response contains "X-RINCON-HOUSEHOLD")) {
 				println(response)
+				println(s"Resend count: $broadcastCount")
 				context.system.terminate()
 			}
 		case Udp.Unbind => sender ! Udp.Unbind
@@ -62,7 +63,8 @@ class DiscoveryActor(address:String, interface:Option[String], port:Int) extends
 
 	def sendSearchDatagram(socket: InetSocketAddress): Unit = {
 		val data: ByteString = ByteString(SEARCH, "UTF-8")
-		times(() => IO(Udp) ! Udp.Send(data, socket), 10)
+		times(() => IO(Udp) ! Udp.Send(data, socket), 3)
+		broadcastCount += 1
 	}
 
 	def times(f:() => Unit, repeat:Int): Unit = {
