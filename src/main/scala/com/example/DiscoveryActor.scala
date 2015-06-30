@@ -59,12 +59,13 @@ class DiscoveryActor(address:String, interface:Option[String], port:Int) extends
 		case Udp.Received(data,socketAddress) =>
 			val response = data.decodeString("UTF-8")
 			if ((response contains "Sonos")  && (response contains "X-RINCON-HOUSEHOLD")) {
-				val pattern = """^LOCATION:\s+([\w:\/.]+)\r\n""".r
-				val urlOption = pattern.findFirstMatchIn(response) map { s => s.group(1)}
-				val url = urlOption getOrElse response
-				println(url)
-				println(s"Resend count: $broadcastCount")
-				context.system.terminate()
+				SSDPDatagram.deserialize[SSDPDiscoveryNotification](response) match {
+					case Some(v) =>
+						println(s"LOCATION found ${v.headers("LOCATION")}")
+						println(s"Resend count: $broadcastCount")
+						context.system.terminate()
+					case None => println("...still waiting")
+				}
 			}
 		case Udp.Unbind => sender ! Udp.Unbind
 		case Udp.Unbound => context.stop(self)
