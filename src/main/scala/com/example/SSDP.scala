@@ -14,11 +14,18 @@ trait SSDPDatagram {
 }
 case class SSDPDiscoveryRequest(headers:Map[String,String]) extends SSDPDatagram {
   val method = SSDPDiscoveryRequest.method
-  
+}
+
+case class SSDPDiscoveryNotification(headers:Map[String,String]) extends SSDPDatagram {
+  val method = SSDPDiscoveryRequest.method
 }
 
 object SSDPDiscoveryRequest {
   val method = "M-SEARCH * HTTP/1.1"
+}
+
+object SSDPDiscoveryNotification {
+  val method = "NOTIFY * HTTP/1.1"
 }
 
 object SSDPDatagram {
@@ -30,7 +37,7 @@ object SSDPDatagram {
     lines.foldLeft(Map.empty[String, String]) { (acc, line) =>
       val splitIdx = line.indexOf(":")
       val p = line.splitAt(splitIdx)
-      acc + (p._1 -> p._2.replaceFirst(":", "").trim)
+      acc + (p._1.trim -> p._2.replaceFirst(":", "").trim)
     }
   }
   implicit object SSDPDiscoveryConvertor extends SSDPLike[SSDPDiscoveryRequest] {
@@ -38,6 +45,16 @@ object SSDPDatagram {
       val lines = s.lines.toSeq
       if (lines.head == SSDPDiscoveryRequest.method) {
         Some(SSDPDiscoveryRequest(parseHeaders(lines.tail)))
+      } else {
+        None
+      }
+    }
+  }
+  implicit object SSDPDiscoveryNotificationConvertor extends SSDPLike[SSDPDiscoveryNotification] {
+    override def convert(s: String): Option[SSDPDiscoveryNotification] = {
+      val lines = s.lines.toSeq
+      if (lines.head == SSDPDiscoveryNotification.method) {
+        Some(SSDPDiscoveryNotification(parseHeaders(lines.tail)))
       } else {
         None
       }
