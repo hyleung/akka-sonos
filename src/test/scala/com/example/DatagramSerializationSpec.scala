@@ -21,7 +21,12 @@ class DatagramSerializationSpec extends FlatSpec with Matchers{
   it should "deserialize to request" in {
     val expected = SSDPDiscoveryRequest(headers)
     val data = expected.serialize
-    val result = SSDPDatagram.deserialize[SSDPDiscoveryRequest](data)
+    val result = SSDPDatagram.deserialize[SSDPDiscoveryRequest](data).get
     result should be (expected)
+  }
+  it should "not deserialize" in {
+    val data = "M-FOO * HTTP/1.1\r\nHOST: 239.255.255.250:1900\r\nMAN: \"ssdp:discover\"\r\nMX: 1\r\nST: urn:schemas-upnp-org:device:ZonePlayer:1"
+    val result = SSDPDatagram.deserialize[SSDPDiscoveryRequest](data)
+    result should be (None)
   }
 }

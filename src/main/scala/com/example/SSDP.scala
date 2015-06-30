@@ -13,25 +13,36 @@ trait SSDPDatagram {
   }
 }
 case class SSDPDiscoveryRequest(headers:Map[String,String]) extends SSDPDatagram {
+  val method = SSDPDiscoveryRequest.method
+  
+}
+
+object SSDPDiscoveryRequest {
   val method = "M-SEARCH * HTTP/1.1"
 }
 
 object SSDPDatagram {
   @annotation.implicitNotFound("Missing implicit convertor for your SSDPDatagram type.")
   trait SSDPLike[A <: SSDPDatagram] {
-    def convert(s:String):A
+    def convert(s:String):Option[A]
   }
-  implicit object SSDPDiscoveryConvertor extends SSDPLike[SSDPDiscoveryRequest] {
-    override def convert(s: String): SSDPDiscoveryRequest = {
-      val lines = s.lines.toSeq
-      val headers = lines.tail.foldLeft(Map.empty[String,String]){ (acc,line) =>
-        val splitIdx = line.indexOf(":")
-        val p = line.splitAt(splitIdx)
-        acc + (p._1 -> p._2.replaceFirst(":","").trim)
-      }
-      SSDPDiscoveryRequest(headers)
+  def parseHeaders(lines:Seq[String]) = {
+    lines.foldLeft(Map.empty[String, String]) { (acc, line) =>
+      val splitIdx = line.indexOf(":")
+      val p = line.splitAt(splitIdx)
+      acc + (p._1 -> p._2.replaceFirst(":", "").trim)
     }
   }
-  def deserialize[A <: SSDPDatagram](data:String)(implicit convertor:SSDPLike[A]):A = convertor.convert(data)
+  implicit object SSDPDiscoveryConvertor extends SSDPLike[SSDPDiscoveryRequest] {
+    override def convert(s: String): Option[SSDPDiscoveryRequest] = {
+      val lines = s.lines.toSeq
+      if (lines.head == SSDPDiscoveryRequest.method) {
+        Some(SSDPDiscoveryRequest(parseHeaders(lines.tail)))
+      } else {
+        None
+      }
+    }
+  }
+  def deserialize[A <: SSDPDatagram](data:String)(implicit convertor:SSDPLike[A]):Option[A] = convertor.convert(data)
 }
 
