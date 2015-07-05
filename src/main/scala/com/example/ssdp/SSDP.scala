@@ -1,4 +1,4 @@
-package com.example
+package com.example.ssdp
 
 /**
  * Created by hyleung on 15-06-29.
@@ -25,11 +25,11 @@ object SSDPDiscoveryRequest {
 }
 
 object SSDPDiscoveryNotification {
-  val method = "NOTIFY * HTTP/1.1"
+  val method = "HTTP/1.1 200 OK"
 }
 
 object SSDPDatagram {
-  @annotation.implicitNotFound("Missing implicit convertor for your SSDPDatagram type.")
+  @annotation.implicitNotFound("Missing implicit converter for your SSDPDatagram type.")
   trait SSDPLike[A <: SSDPDatagram] {
     def convert(s:String):Option[A]
   }

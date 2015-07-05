@@ -1,6 +1,6 @@
-package com.example
+package com.example.ssdp
 
-import org.scalatest.{Matchers, FlatSpec}
+import org.scalatest.{FlatSpec, Matchers}
 
 /**
  * Created by hyleung on 15-06-29.
@@ -35,12 +35,9 @@ class DatagramSerializationSpec extends FlatSpec with Matchers{
 
   class DiscoveryNotificationTest {
     val headers:Map[String,String] = Map(
-      "HOST" -> "239.255.255.250:1900",
       "CACHE-CONTROL" ->  "max-age = 1800",
       "LOCATION" ->  "http://192.168.1.70:1400/xml/device_description.xml",
-      "NT" -> "urn:schemas-upnp-org:device:ZonePlayer:1",
-      "NTS" -> "ssdp:alive",
-      "SERVER" -> "Linux UPnP/1.0 Sonos/28.1-86173 (ZPS1)",
+      "ST" -> "urn:schemas-upnp-org:device:ZonePlayer:1",
       "USN" -> "uuid:RINCON_B8E93781D11001400::urn:schemas-upnp-org:device:ZonePlayer:1",
       "X-RINCON-BOOTSEQ" -> "28",
       "X-RINCON-HOUSEHOLD" -> "Sonos_iROH6kmkXYSpfYZTTyCYZMC6jH"
@@ -49,13 +46,10 @@ class DatagramSerializationSpec extends FlatSpec with Matchers{
 
   behavior of "SSDPDiscoveryNotification"
   it should "deserialize" in new DiscoveryNotificationTest{
-    val data ="""NOTIFY * HTTP/1.1
-			 HOST: 239.255.255.250:1900
+    val data ="""HTTP/1.1 200 OK
 			 CACHE-CONTROL: max-age = 1800
 			 LOCATION: http://192.168.1.70:1400/xml/device_description.xml
-			 NT: urn:schemas-upnp-org:device:ZonePlayer:1
-			 NTS: ssdp:alive
-			 SERVER: Linux UPnP/1.0 Sonos/28.1-86173 (ZPS1)
+			 ST: urn:schemas-upnp-org:device:ZonePlayer:1
 			 USN: uuid:RINCON_B8E93781D11001400::urn:schemas-upnp-org:device:ZonePlayer:1
 			 X-RINCON-BOOTSEQ: 28
 			 X-RINCON-HOUSEHOLD: Sonos_iROH6kmkXYSpfYZTTyCYZMC6jH"""
