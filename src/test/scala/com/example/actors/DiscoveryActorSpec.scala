@@ -37,7 +37,7 @@ class DiscoveryActorSpec(_system: ActorSystem) extends TestKit(_system) with Imp
     "then send multi-cast on bind" in {
       actor ! Udp.Bound(local)
       //upon binding, discovery requests are sent back to the sender of the Udp.Bound message
-      val discoveryRequests = this.receiveWhile(100 millis, 100 millis,10){
+      val discoveryRequests = receiveWhile(100 millis, 100 millis,10){
         case Udp.Send(b,_,_) => SSDPDatagram.deserialize[SSDPDiscoveryRequest](b.decodeString("UTF-8")).isDefined
       }
       assert(discoveryRequests.size == 3)
