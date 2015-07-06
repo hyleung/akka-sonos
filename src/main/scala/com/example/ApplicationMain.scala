@@ -5,11 +5,12 @@ import akka.io.{IO, Udp}
 import com.example.protocol.DiscoveryProtocol
 import DiscoveryProtocol.StartDiscovery
 import com.example.actors.DiscoveryActor
+import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.language.postfixOps
-object ApplicationMain extends App {
+object ApplicationMain extends App with LazyLogging {
   implicit val system = ActorSystem("MyActorSystem")
   val MULTICAST_ADDR = "239.255.255.250"
   val MULTICAST_PORT = 0
@@ -21,5 +22,5 @@ object ApplicationMain extends App {
   // This example app will ping pong 3 times and thereafter terminate the ActorSystem - 
   // see counter logic in PingActor
   Await.result(system.whenTerminated,10 minutes)
-  println(s"Discovery completed in ${System.currentTimeMillis() - startTime} ms")
+  logger.info(s"Discovery completed in ${System.currentTimeMillis() - startTime} ms")
 }

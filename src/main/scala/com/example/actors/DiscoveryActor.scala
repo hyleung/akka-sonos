@@ -11,6 +11,7 @@ import akka.util.ByteString
 import com.example.protocol.DiscoveryProtocol
 import DiscoveryProtocol._
 import com.example.ssdp.{SSDPDatagram, SSDPDiscoveryNotification, SSDPDiscoveryRequest}
+import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
@@ -91,7 +92,7 @@ final case class InetV4ProtocolFamily() extends DatagramChannelCreator {
 	override def create(): DatagramChannel = DatagramChannel.open(StandardProtocolFamily.INET)
 }
 //Multi-cast group settings
-final case class MulticastGroup(address:String, interface:Option[String]) extends SocketOptionV2 {
+final case class MulticastGroup(address:String, interface:Option[String]) extends SocketOptionV2 with LazyLogging {
 	override def afterBind(socket: DatagramSocket): Unit = {
 		val group = InetAddress.getByName(address)
 		val networkInterface:Seq[NetworkInterface] = interface match {
@@ -102,6 +103,7 @@ final case class MulticastGroup(address:String, interface:Option[String]) extend
 				interfaces.toSeq
 		}
 		networkInterface foreach { interface =>
+			logger.debug("Joining multi-cast group {} on {}", address, interface.getName)
 			socket.getChannel.join(group, interface)
 		}
 
