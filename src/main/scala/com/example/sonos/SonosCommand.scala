@@ -4,14 +4,13 @@ import scala.xml.{MetaData, NamespaceBinding, Elem}
 
 /**
  * Case class for constructing the SOAP calls to the SONOS api.
- *
  * == Message format ==
  *
  * The message format for the SOAP calls should look something like this.
  * If the SOAP action takes no parameters, the `<s:Body>` element can be empty.
  *
  * Service types are shown in the `device_description.xml` response.
- *
+ *  {{{
  * <?xml version="1.0"?>
  *	<s:Envelope
  *		xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"
@@ -22,12 +21,12 @@ import scala.xml.{MetaData, NamespaceBinding, Elem}
  *			</u:actionName>
  *		</s:Body>
  *	</s:Envelope>
+ *  }}}
  *
- *
- * @param serviceType the service type (e.g. `ZoneGroupTopology`)
- * @param version the service version (e.g. 1)
- * @param action the as described in the scpd (e.g. /xml/ZoneGroupTopology1.xml)
- * @param arguments any arguments for the SOAP action
+ * @param serviceType the service type. (e.g. `ZoneGroupTopology`)
+ * @param version the service version. (e.g. 1)
+ * @param action as described in the scpd. (e.g. `/xml/ZoneGroupTopology1.xml`)
+ * @param arguments any arguments for the SOAP action.
  */
 case class SonosCommand(serviceType:String, version:Int, action:String, arguments:Map[String,String]) {
 	/**
