@@ -1,6 +1,6 @@
 package com.example.sonos
 
-import scala.xml.{MetaData, NamespaceBinding, Elem}
+import scala.xml.{Attribute, MetaData, NamespaceBinding, Elem}
 
 /**
  * Case class for constructing the SOAP calls to the SONOS api.
@@ -32,23 +32,12 @@ case class SonosCommand(serviceType:String, version:Int, action:String, argument
 	/**
 	 * SOAPACTION header for the http POST call to the SOAP endpoint.
 	 */
-	val actionHeader = s"SOAPACTION:$serviceTypeNamespace:$version#$action"
+	val actionHeader = s"$serviceTypeNamespace:$version#$action"
 
 	/**
 	 * xml namespace for the SOAP call
 	 */
 	lazy val serviceTypeNamespace = s"urn:schemas-upnp-org:service:serviceType:$serviceType"
-
-
-	/**
-	 * XML template for the SOAP (ugh) message.
-	 */
-	private val envelope = <s:Envelope
-	xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"
-	s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
-		<s:Body>
-		</s:Body>
-	</s:Envelope>
 
 	/**
 	 * Return the SOAP message for the command
@@ -56,8 +45,14 @@ case class SonosCommand(serviceType:String, version:Int, action:String, argument
 	 */
 	def soapXml:Elem = {
 		val children = arguments.foldRight(List.empty[Elem])((p,acc) => Elem(null,p._1,xml.Null,xml.TopScope,minimizeEmpty = true, xml.Text(p._2)) +: acc)
-		Elem("u",action, xml.Null ,NamespaceBinding("u",serviceTypeNamespace, null), minimizeEmpty = true, children:_*)
+		val params: Elem = Elem("u",action, xml.Null ,NamespaceBinding("u",serviceTypeNamespace, null), minimizeEmpty = true, children:_*)
+		val soapNamespace: NamespaceBinding = NamespaceBinding("s", "http://schemas.xmlsoap.org/soap/envelope/", null)
+		val body = Elem("s","body",xml.Null, soapNamespace, minimizeEmpty = true, params)
+		Elem("s","Envelope", Attribute("s","encoding","http://schemas.xmlsoap.org/soap/encoding/",xml.Null),soapNamespace, minimizeEmpty = true, body)
 	}
+	
+}
 
-
+object SonosCommand {
+	val SOAP_ACTION_HEADER = "SOAPACTION"
 }
