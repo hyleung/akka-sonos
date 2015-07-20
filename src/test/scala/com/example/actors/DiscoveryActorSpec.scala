@@ -42,7 +42,7 @@ class DiscoveryActorSpec(_system: ActorSystem) extends TestKit(_system) with Imp
       }
       assert(discoveryRequests.size == 3)
     }
-    "then terminate after SSDP notification received" in {
+    "then respond with DiscoveryComplete after SSDP notification received" in {
       val data ="""HTTP/1.1 200 OK
 			 CACHE-CONTROL: max-age = 1800
 			 LOCATION: http://192.168.1.70:1400/xml/device_description.xml
@@ -50,9 +50,11 @@ class DiscoveryActorSpec(_system: ActorSystem) extends TestKit(_system) with Imp
 			 USN: uuid:RINCON_B8E93781D11001400::urn:schemas-upnp-org:device:ZonePlayer:1
 			 X-RINCON-BOOTSEQ: 28
 			 X-RINCON-HOUSEHOLD: Sonos_iROH6kmkXYSpfYZTTyCYZMC6jH"""
-      val msg = SSDPDatagram.deserialize[SSDPDiscoveryNotification](data).get
-      actor ! Udp.Received(ByteString(msg.serialize,"UTF-8"), local)
-      //system should terminate
+      actor ! Udp.Received(ByteString(data,"UTF-8"), local)
+      expectMsgPF(100 millis,"Should get DiscoveryComplete"){
+        case DiscoveryComplete(location) => location should be ("http://192.168.1.70:1400/xml/device_description.xml")
+        case _ => fail()
+      }
     }
   }
 

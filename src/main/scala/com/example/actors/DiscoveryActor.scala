@@ -3,7 +3,7 @@ package com.example.actors
 import java.net._
 import java.nio.channels.DatagramChannel
 
-import akka.actor.{Actor, ActorRef, Props}
+import akka.actor.{PoisonPill, Actor, ActorRef, Props}
 import akka.event.Logging
 import akka.io.Inet.{DatagramChannelCreator, SocketOptionV2}
 import akka.io.Udp
@@ -39,9 +39,9 @@ class DiscoveryActor(address:String, interface:Option[String], port:Int, udp:Act
 			val socketAddress = new InetSocketAddress(InetAddress.getLocalHost, port)
 			val remote = new InetSocketAddress(address, 1900)
 			udp ! Udp.Bind(self, socketAddress,opts)
-			context.become(awaitUdpBind(remote))
+			context.become(awaitUdpBind(sender(), remote))
 	}
-	def awaitUdpBind(remote:InetSocketAddress): Receive = {
+	def awaitUdpBind(s:ActorRef, remote:InetSocketAddress): Receive = {
 		case Udp.Bound(local) =>
 			log.info(s"Bound to $local, awaiting discovery...")
 			sendSearchDatagram(sender(),remote)
@@ -62,10 +62,12 @@ class DiscoveryActor(address:String, interface:Option[String], port:Int, udp:Act
 					case Some(v) =>
 						log.info(s"LOCATION found ${v.headers("LOCATION")}")
 						log.debug(s"Resend count: $broadcastCount")
-						context.system.terminate()
+						sender ! DiscoveryComplete(v.headers("LOCATION"))
+						self ! PoisonPill
+						//context.system.terminate()
 					case None =>
 						//no op
-						log.debug(s"Unable to deserialize: $response")
+						log.warning(s"Unable to deserialize: $response")
 				}
 			}
 
