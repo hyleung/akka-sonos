@@ -4,7 +4,8 @@ import akka.actor.ActorSystem
 import akka.io.{IO, Udp}
 import com.example.protocol.DiscoveryProtocol
 import DiscoveryProtocol.StartDiscovery
-import com.example.actors.DiscoveryActor
+import com.example.actors.{SonosApiActor, DiscoveryActor}
+import com.example.protocol.SonosProtocol.ZoneQuery
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.Await
