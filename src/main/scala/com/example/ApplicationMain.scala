@@ -16,12 +16,15 @@ object ApplicationMain extends App with LazyLogging {
   val MULTICAST_ADDR = "239.255.255.250"
   val MULTICAST_PORT = 0
   val udp = IO(Udp)
-  val discovery = system.actorOf(DiscoveryActor.props(MULTICAST_ADDR,MULTICAST_PORT,udp))
-  //val discovery = system.actorOf(DiscoveryActor.props(MULTICAST_ADDR, "en0", MULTICAST_PORT))
+  //val discovery = system.actorOf(DiscoveryActor.props(MULTICAST_ADDR,MULTICAST_PORT,udp))
+  val discovery = system.actorOf(DiscoveryActor.props(MULTICAST_ADDR, "en0", MULTICAST_PORT, udp))
   val startTime = System.currentTimeMillis()
   discovery ! StartDiscovery()
-  // This example app will ping pong 3 times and thereafter terminate the ActorSystem - 
-  // see counter logic in PingActor
-  Await.result(system.whenTerminated,10 minutes)
+
   logger.info(s"Discovery completed in ${System.currentTimeMillis() - startTime} ms")
+
+  val zones = system.actorOf(SonosApiActor.props("http://192.168.1.83:1400"))
+  zones ! ZoneQuery()
+
+  Await.result(system.whenTerminated,5 seconds)
 }
