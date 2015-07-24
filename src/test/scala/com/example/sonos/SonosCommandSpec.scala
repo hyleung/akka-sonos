@@ -38,7 +38,6 @@ class SonosCommandSpec extends FlatSpec with Matchers {
 	it should "have envelope element at root" in {
 		val command = SonosCommand("SomeEndpoint",1,"SomeAction",Map.empty)
 		val soapXml = command.soapXml
-		println(soapXml)
 		soapXml.namespace should be ("http://schemas.xmlsoap.org/soap/envelope/")
 		soapXml.label should be ("Envelope")
 	}

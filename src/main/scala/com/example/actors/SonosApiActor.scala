@@ -8,6 +8,7 @@ import akka.stream.ActorMaterializer
 import com.example.protocol.SonosProtocol.{ZoneQuery, ZoneResponse}
 import com.example.sonos.SonosCommand
 
+import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.language.postfixOps
@@ -30,11 +31,11 @@ class SonosApiActor(baseUri: String) extends Actor with ActorLogging {
         entity = HttpEntity(ContentType(MediaTypes.`text/xml`), message.soapXml.toString()),
         headers = List(RawHeader(SonosCommand.SOAP_ACTION_HEADER, message.actionHeader))
       ))
+      val s = sender()
       f.onSuccess {
         case resp if resp.status == StatusCodes.OK => resp.entity.toStrict(5 seconds).map { e =>
           val body = e.data.decodeString("UTF-8")
-          println(body)
-          sender() ! ZoneResponse(body)
+          s ! ZoneResponse(body)
         }
         case other => ???
       }

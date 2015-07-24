@@ -45,7 +45,7 @@ class DiscoveryActor(address:String, interface:Option[String], port:Int, udp:Act
 		case Udp.Bound(local) =>
 			log.info(s"Bound to $local, awaiting discovery...")
 			sendSearchDatagram(sender(),remote)
-			context.become(ready(sender(), remote))
+			context.become(ready(s, remote))
 			context.system.scheduler.scheduleOnce(1000 milli,self, OnTimeout())
 	}
 
@@ -64,7 +64,6 @@ class DiscoveryActor(address:String, interface:Option[String], port:Int, udp:Act
 						log.debug(s"Resend count: $broadcastCount")
 						sender ! DiscoveryComplete(v.headers("LOCATION"))
 						self ! PoisonPill
-						//context.system.terminate()
 					case None =>
 						//no op
 						log.warning(s"Unable to deserialize: $response")
