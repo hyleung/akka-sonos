@@ -18,7 +18,9 @@ object ApplicationMain extends App with LazyLogging {
   implicit val timeout = Timeout(5 seconds)
   supervisor ? ZonesRequest() onSuccess {
     case msg => msg match {
-      case ZonesResponse(s) => println(s)
+      case ZonesResponse(s) =>
+        println(s)
+        system.terminate()
     }
   }
 }
