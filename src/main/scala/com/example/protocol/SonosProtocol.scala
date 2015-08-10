@@ -1,5 +1,7 @@
 package com.example.protocol
 
+import com.example.sonos.ZoneGroup
+
 /**
  * Created with IntelliJ IDEA.
  * Date: 15-07-17
@@ -8,5 +10,5 @@ package com.example.protocol
  */
 object SonosProtocol {
 	case class ZoneQuery()
-	case class ZoneResponse(body:String)
+	case class ZoneResponse(zoneGroups:Seq[ZoneGroup])
 }

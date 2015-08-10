@@ -6,12 +6,12 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.stream.ActorMaterializer
 import com.example.protocol.SonosProtocol.{ZoneQuery, ZoneResponse}
-import com.example.sonos.SonosCommand
+import com.example.sonos.{ZoneGroupMember, ZoneGroup, SonosCommand}
 
-import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.language.postfixOps
+import scala.xml.{Node, XML}
 
 /**
  * Created with IntelliJ IDEA.
@@ -35,12 +35,29 @@ class SonosApiActor(baseUri: String) extends Actor with ActorLogging {
       f.onSuccess {
         case resp if resp.status == StatusCodes.OK => resp.entity.toStrict(5 seconds).map { e =>
           val body = e.data.decodeString("UTF-8")
-          s ! ZoneResponse(body)
+          s ! ZoneResponse(parseZoneResponse(body))
         }
         case other => ???
       }
     }
     case _ => ???
+  }
+
+  def parseZoneResponse(body:String):Seq[ZoneGroup] = {
+    val zoneGroupState = XML.loadString(body) \\ "GetZoneGroupStateResponse" \ "ZoneGroupState"
+    val zoneGroups = XML.loadString(zoneGroupState.text) \\ "ZoneGroup"
+    zoneGroups.map(zoneGroupFromNode)
+  }
+
+  def zoneGroupFromNode(groupNode:Node):ZoneGroup = {
+    val members = (groupNode \\ "ZoneGroupMember").map(groupMemberFromNode)
+    ZoneGroup(members)
+  }
+
+  def groupMemberFromNode(memberNode:Node):ZoneGroupMember = {
+    val location = Uri((memberNode \ "@Location").text)
+    val zoneName = (memberNode \ "@ZoneName").text
+    ZoneGroupMember(zoneName, location)
   }
 }
 

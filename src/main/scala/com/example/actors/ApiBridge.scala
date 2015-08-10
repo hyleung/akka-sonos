@@ -33,8 +33,7 @@ class ApiBridge extends Actor with ActorLogging{
   }
   def awaitingResponse(sender:ActorRef):Receive = {
     case ZoneResponse(body) =>
-      val zoneGroupState = (XML.loadString(body) \\ "GetZoneGroupStateResponse" \ "ZoneGroupState").text
-      sender ! ZonesResponse(zoneGroupState)
+      sender ! ZonesResponse(body)
       self ! PoisonPill
     case other => log.warning(s"Unexpected message: ${other.toString}")
   }
