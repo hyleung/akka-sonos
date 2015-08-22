@@ -1,7 +1,8 @@
 package com.example.actors
 
-import akka.actor.{Actor, ActorLogging, Props}
+import akka.actor.{ActorSystem, Actor, ActorLogging, Props}
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.HttpEntity.Strict
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.stream.ActorMaterializer
@@ -11,6 +12,7 @@ import com.example.sonos.{ZoneGroupMember, ZoneGroup, SonosCommand}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.language.postfixOps
+import scala.util.{Failure, Success, Try}
 import scala.xml.{Node, XML}
 
 /**
@@ -19,25 +21,21 @@ import scala.xml.{Node, XML}
  * Time: 9:44 PM
  * To change this template use File | Settings | File Templates.
  */
-class SonosApiActor(baseUri: String) extends Actor with ActorLogging {
-  implicit val _ = context.system
-  implicit val materializer = ActorMaterializer()
-
+class SonosApiActor(baseUri: String) extends Actor with ActorLogging with HttpClient{
   override def receive: Receive = {
     case ZoneQuery() => {
       val message = SonosCommand("ZoneGroupTopology", 1, "GetZoneGroupState", Map.empty)
-      val f = Http().singleRequest(HttpRequest(uri = s"$baseUri/ZoneGroupTopology/Control",
-        method = HttpMethods.POST,
-        entity = HttpEntity(ContentType(MediaTypes.`text/xml`), message.soapXml.toString()),
-        headers = List(RawHeader(SonosCommand.SOAP_ACTION_HEADER, message.actionHeader))
-      ))
+      val entity: Strict = HttpEntity(ContentType(MediaTypes.`text/xml`), message.soapXml.toString())
+      val headers: List[RawHeader] = List(RawHeader(SonosCommand.SOAP_ACTION_HEADER, message.actionHeader))
       val s = sender()
-      f.onSuccess {
-        case resp if resp.status == StatusCodes.OK => resp.entity.toStrict(5 seconds).map { e =>
-          val body = e.data.decodeString("UTF-8")
-          s ! ZoneResponse(parseZoneResponse(body))
+      execPost(s"$baseUri/ZoneGroupTopology/Control", entity, headers) {
+        case Success(resp) if resp.status == StatusCodes.OK  => {
+          resp.entity.toStrict(5 seconds)(materializer).map{ e =>
+            val body = e.data.decodeString("UTF-8")
+            s ! ZoneResponse(parseZoneResponse(body))
+          }
         }
-        case other => ???
+        case Failure(err) => ???
       }
     }
     case _ => ???
@@ -63,4 +61,15 @@ class SonosApiActor(baseUri: String) extends Actor with ActorLogging {
 
 object SonosApiActor {
   def props(ip: String) = Props(new SonosApiActor(ip))
+}
+
+trait HttpClient { this: Actor =>
+  implicit val materializer = ActorMaterializer()
+  def execPost(uriString: String, httpEntity:RequestEntity, httpHeaders: List[HttpHeader])(f: Try[HttpResponse] => Unit): Unit = {
+    Http(context.system)
+        .singleRequest(
+            HttpRequest(uri = uriString, method = HttpMethods.POST,  entity = httpEntity, headers = httpHeaders)
+        )
+        .onComplete(f)
+  }
 }
