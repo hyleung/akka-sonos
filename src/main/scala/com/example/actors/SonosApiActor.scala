@@ -10,9 +10,10 @@ import com.example.protocol.SonosProtocol.{ZoneQuery, ZoneResponse}
 import com.example.sonos.{ZoneGroupMember, ZoneGroup, SonosCommand}
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.language.postfixOps
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success}
 import scala.xml.{Node, XML}
 
 /**
@@ -28,12 +29,9 @@ class SonosApiActor(baseUri: String) extends Actor with ActorLogging with HttpCl
       val entity: Strict = HttpEntity(ContentType(MediaTypes.`text/xml`), message.soapXml.toString())
       val headers: List[RawHeader] = List(RawHeader(SonosCommand.SOAP_ACTION_HEADER, message.actionHeader))
       val s = sender()
-      execPost(s"$baseUri/ZoneGroupTopology/Control", entity, headers) {
-        case Success(resp) if resp.status == StatusCodes.OK  => {
-          resp.entity.toStrict(5 seconds)(materializer).map{ e =>
-            val body = e.data.decodeString("UTF-8")
+      execPost(s"$baseUri/ZoneGroupTopology/Control", entity, headers).onComplete{
+        case Success((StatusCodes.OK, body))  => {
             s ! ZoneResponse(parseZoneResponse(body))
-          }
         }
         case Failure(err) => ???
       }
@@ -65,11 +63,13 @@ object SonosApiActor {
 
 trait HttpClient { this: Actor =>
   implicit val materializer = ActorMaterializer()
-  def execPost(uriString: String, httpEntity:RequestEntity, httpHeaders: List[HttpHeader])(f: Try[HttpResponse] => Unit): Unit = {
-    Http(context.system)
+  def execPost(uriString: String, httpEntity:RequestEntity, httpHeaders: List[HttpHeader]): Future[(StatusCode,String)] = {
+    val httpReq = Http(context.system)
         .singleRequest(
-            HttpRequest(uri = uriString, method = HttpMethods.POST,  entity = httpEntity, headers = httpHeaders)
-        )
-        .onComplete(f)
+            HttpRequest(uri = uriString, method = HttpMethods.POST, entity = httpEntity, headers = httpHeaders))
+    for {
+      response <- httpReq
+      entity <- response.entity.toStrict(5 seconds)
+    } yield (response.status, entity.data.decodeString("UTF-8"))
   }
 }
