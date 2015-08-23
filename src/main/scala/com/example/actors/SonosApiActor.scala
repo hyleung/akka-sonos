@@ -33,11 +33,10 @@ class SonosApiActor(baseUri: String)
       val entity: Strict = HttpEntity(ContentType(MediaTypes.`text/xml`), message.soapXml.toString())
       val headers: List[RawHeader] = List(RawHeader(SonosCommand.SOAP_ACTION_HEADER, message.actionHeader))
       val s = sender()
-      execPost(s"$baseUri/ZoneGroupTopology/Control", entity, headers).onComplete{
-        case Success((StatusCodes.OK, body))  => {
+      execPost(s"$baseUri/ZoneGroupTopology/Control", entity, headers).map{
+        case (StatusCodes.OK, body)  => {
             s ! ZoneResponse(parseZoneResponse(body))
         }
-        case Failure(err) => ???
       }
     }
     case _ => ???
