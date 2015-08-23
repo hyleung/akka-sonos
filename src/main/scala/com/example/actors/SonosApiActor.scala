@@ -22,7 +22,11 @@ import scala.xml.{Node, XML}
  * Time: 9:44 PM
  * To change this template use File | Settings | File Templates.
  */
-class SonosApiActor(baseUri: String) extends Actor with ActorLogging with HttpClient{
+class SonosApiActor(baseUri: String)
+    extends Actor
+    with ActorLogging
+    with HttpClient
+    with BodyParser {
   override def receive: Receive = {
     case ZoneQuery() => {
       val message = SonosCommand("ZoneGroupTopology", 1, "GetZoneGroupState", Map.empty)
@@ -39,22 +43,7 @@ class SonosApiActor(baseUri: String) extends Actor with ActorLogging with HttpCl
     case _ => ???
   }
 
-  def parseZoneResponse(body:String):Seq[ZoneGroup] = {
-    val zoneGroupState = XML.loadString(body) \\ "GetZoneGroupStateResponse" \ "ZoneGroupState"
-    val zoneGroups = XML.loadString(zoneGroupState.text) \\ "ZoneGroup"
-    zoneGroups.map(zoneGroupFromNode)
-  }
 
-  def zoneGroupFromNode(groupNode:Node):ZoneGroup = {
-    val members = (groupNode \\ "ZoneGroupMember").map(groupMemberFromNode)
-    ZoneGroup(members)
-  }
-
-  def groupMemberFromNode(memberNode:Node):ZoneGroupMember = {
-    val location = Uri((memberNode \ "@Location").text)
-    val zoneName = (memberNode \ "@ZoneName").text
-    ZoneGroupMember(zoneName, location)
-  }
 }
 
 object SonosApiActor {
@@ -71,5 +60,24 @@ trait HttpClient { this: Actor =>
       response <- httpReq
       entity <- response.entity.toStrict(5 seconds)
     } yield (response.status, entity.data.decodeString("UTF-8"))
+  }
+}
+
+trait BodyParser {
+  def parseZoneResponse(body:String):Seq[ZoneGroup] = {
+    val zoneGroupState = XML.loadString(body) \\ "GetZoneGroupStateResponse" \ "ZoneGroupState"
+    val zoneGroups = XML.loadString(zoneGroupState.text) \\ "ZoneGroup"
+    zoneGroups.map(zoneGroupFromNode)
+  }
+
+  def zoneGroupFromNode(groupNode:Node):ZoneGroup = {
+    val members = (groupNode \\ "ZoneGroupMember").map(groupMemberFromNode)
+    ZoneGroup(members)
+  }
+
+  def groupMemberFromNode(memberNode:Node):ZoneGroupMember = {
+    val location = Uri((memberNode \ "@Location").text)
+    val zoneName = (memberNode \ "@ZoneName").text
+    ZoneGroupMember(zoneName, location)
   }
 }
