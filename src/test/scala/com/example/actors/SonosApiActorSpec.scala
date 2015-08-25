@@ -32,20 +32,27 @@ class SonosApiActorSpec(_system: ActorSystem)
 	trait MockParser extends BodyParser {
 		override def parseZoneResponse(body: String): Seq[ZoneGroup] = List(ZoneGroup(List(ZoneGroupMember("foo",Uri("http://127.0.0.1")))))
 	}
-	class TestSonosApiActor(ip:String) extends SonosApiActor(ip) with MockHttpClient with MockParser
+	class TestSonosApiActor(ip:String)
+		extends SonosApiActor(ip)
+		with MockHttpClient
+		with MockParser
 	object TestSonosApiActor {
 		def props(ip: String) = Props(new TestSonosApiActor(ip))
 	}
+
 	def this() = this(ActorSystem("SonosApiActorSpec"))
 	"SonosApiActor" must {
 		"respond to ZoneQuery success" in  {
 			val apiActor = TestActorRef(TestSonosApiActor.props("127.0.01"))
 			apiActor ! ZoneQuery()
-			this.expectMsgPF(250 millis,"Expect success response") {
+			this.expectMsgPF() {
 				case ZoneResponse(r) => r.nonEmpty
 				case _ => fail()
 			}
 		}
 	}
 
+	override protected def afterAll(): Unit = {
+
+	}
 }
