@@ -10,6 +10,7 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import org.scalamock.scalatest.MockFactory
 
 /**
  * Created with IntelliJ IDEA.
@@ -22,11 +23,13 @@ class SonosApiActorSpec(_system: ActorSystem)
 	with ImplicitSender
 	with WordSpecLike
 	with Matchers
+	with MockFactory
 	with BeforeAndAfterAll {
 
+	val stub = stubFunction[(StatusCode, String)]
 	trait MockHttpClient extends HttpClient { this: Actor =>
 		override def execPost(uriString: String, httpEntity: RequestEntity, httpHeaders: List[HttpHeader]): Future[(StatusCode, String)] = Future {
-			(StatusCodes.OK, "foo")
+			stub()
 		}
 	}
 	trait MockParser extends BodyParser {
@@ -36,6 +39,7 @@ class SonosApiActorSpec(_system: ActorSystem)
 		extends SonosApiActor(ip)
 		with MockHttpClient
 		with MockParser
+
 	object TestSonosApiActor {
 		def props(ip: String) = Props(new TestSonosApiActor(ip))
 	}
@@ -43,6 +47,7 @@ class SonosApiActorSpec(_system: ActorSystem)
 	def this() = this(ActorSystem("SonosApiActorSpec"))
 	"SonosApiActor" must {
 		"respond to ZoneQuery success" in  {
+			stub.when().returns((StatusCodes.OK,"foo"))
 			val apiActor = TestActorRef(TestSonosApiActor.props("127.0.01"))
 			apiActor ! ZoneQuery()
 			this.expectMsgPF() {

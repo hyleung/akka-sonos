@@ -3,6 +3,7 @@ package com.example.actors
 import akka.actor.{ActorSystem, Actor, ActorLogging, Props}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpEntity.Strict
+import akka.http.scaladsl.model.StatusCodes.Success
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.stream.ActorMaterializer
@@ -13,7 +14,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.language.postfixOps
-import scala.util.{Failure, Success}
+
 import scala.xml.{Node, XML}
 
 /**
@@ -34,7 +35,7 @@ class SonosApiActor(baseUri: String)
       val headers: List[RawHeader] = List(RawHeader(SonosCommand.SOAP_ACTION_HEADER, message.actionHeader))
       val s = sender()
       execPost(s"$baseUri/ZoneGroupTopology/Control", entity, headers).map{
-        case (StatusCodes.OK, body)  => {
+        case (Success(_), body)  => {
             s ! ZoneResponse(parseZoneResponse(body))
         }
       }
