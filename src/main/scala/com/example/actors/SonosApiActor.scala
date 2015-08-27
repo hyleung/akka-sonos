@@ -3,11 +3,11 @@ package com.example.actors
 import akka.actor.{ActorSystem, Actor, ActorLogging, Props}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpEntity.Strict
-import akka.http.scaladsl.model.StatusCodes.Success
+import akka.http.scaladsl.model.StatusCodes.{CustomStatusCode, ClientError, ServerError, Success}
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.stream.ActorMaterializer
-import com.example.protocol.SonosProtocol.{ZoneQuery, ZoneResponse}
+import com.example.protocol.SonosProtocol.{SonosError, ZoneQuery, ZoneResponse}
 import com.example.sonos.{ZoneGroupMember, ZoneGroup, SonosCommand}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -38,6 +38,7 @@ class SonosApiActor(baseUri: String)
         case (Success(_), body)  => {
             s ! ZoneResponse(parseZoneResponse(body))
         }
+        case (code ,_) if code.isFailure() => s ! SonosError()
       }
     }
     case _ => ???

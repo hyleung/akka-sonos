@@ -9,6 +9,7 @@ import com.example.sonos.ZoneGroup
  * To change this template use File | Settings | File Templates.
  */
 object SonosProtocol {
+	case class SonosError()
 	case class ZoneQuery()
 	case class ZoneResponse(zoneGroups:Seq[ZoneGroup])
 }

@@ -1,9 +1,10 @@
 package com.example.actors
 
+import akka.actor.Status.Failure
 import akka.actor.{Props, Actor, ActorSystem}
 import akka.http.scaladsl.model._
 import akka.testkit.{TestActorRef, ImplicitSender, TestKit}
-import com.example.protocol.SonosProtocol.{ZoneResponse, ZoneQuery}
+import com.example.protocol.SonosProtocol.{SonosError, ZoneResponse, ZoneQuery}
 import com.example.sonos.{ZoneGroupMember, ZoneGroup}
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 import scala.concurrent.duration._
@@ -52,6 +53,24 @@ class SonosApiActorSpec(_system: ActorSystem)
 			apiActor ! ZoneQuery()
 			this.expectMsgPF() {
 				case ZoneResponse(r) => r.nonEmpty
+				case _ => fail()
+			}
+		}
+		"raise error for ZoneQuery InternalServerError" in {
+			stub.when().returns((StatusCodes.InternalServerError,"error"))
+			val apiActor = TestActorRef(TestSonosApiActor.props("127.0.01"))
+			apiActor ! ZoneQuery()
+			this.expectMsgPF() {
+				case SonosError() => true
+				case _ => fail()
+			}
+		}
+		"raise error for ZoneQuery ClientError" in {
+			stub.when().returns((StatusCodes.BadRequest,"error"))
+			val apiActor = TestActorRef(TestSonosApiActor.props("127.0.01"))
+			apiActor ! ZoneQuery()
+			this.expectMsgPF() {
+				case SonosError() => true
 				case _ => fail()
 			}
 		}
