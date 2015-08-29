@@ -63,9 +63,11 @@ with BeforeAndAfterAll {
 	"DiscoveryActor" must {
 		"re-send search datagram on timeout" in {
 			val udp = TestProbe()
-			val actor = TestActorRef(new TestDiscoveryActor(stubFunction[Unit], udp.ref))
+			val mockSsdpClient = mockFunction[Unit]
+			val actor = TestActorRef(new TestDiscoveryActor(mockSsdpClient, udp.ref))
 			val local = InetSocketAddress.createUnresolved("localhost", 1900)
 			val remote = InetSocketAddress.createUnresolved("remote", 1900)
+			mockSsdpClient.expects().atLeastOnce()
 			actor ! StartDiscovery()
 			actor ! Udp.Bound(local)
 			actor ! OnTimeout()
