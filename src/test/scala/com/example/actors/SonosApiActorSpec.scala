@@ -74,9 +74,15 @@ class SonosApiActorSpec(_system: ActorSystem)
 				case _ => fail()
 			}
 		}
+		"throw exception for other messages" in {
+			val apiActor = TestActorRef(TestSonosApiActor.props("127.0.01"))
+			intercept[NotImplementedError] {apiActor.receive(Dummy())}
+		}
 	}
 
 	override protected def afterAll(): Unit = {
 
 	}
+
+	case class Dummy()
 }
