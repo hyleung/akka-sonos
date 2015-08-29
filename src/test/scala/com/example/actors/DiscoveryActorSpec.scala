@@ -28,7 +28,7 @@ class DiscoveryActorSpec(_system: ActorSystem) extends TestKit(_system) with Imp
     val remote = InetSocketAddress.createUnresolved("remote",1900)
     "perform UDP bind on StartDiscovery" in {
       actor ! StartDiscovery()
-      val options = udp.expectMsgPF(1 second,"Should bind to multi-cast group"){
+      val options = udp.expectMsgPF(){
         case Udp.Bind(_,_,o) => o
       }
       assert(options.exists(o => o.isInstanceOf[MulticastGroup]))
@@ -51,7 +51,7 @@ class DiscoveryActorSpec(_system: ActorSystem) extends TestKit(_system) with Imp
 			 X-RINCON-BOOTSEQ: 28
 			 X-RINCON-HOUSEHOLD: Sonos_iROH6kmkXYSpfYZTTyCYZMC6jH"""
       actor ! Udp.Received(ByteString(data,"UTF-8"), local)
-      expectMsgPF(100 millis,"Should get DiscoveryComplete"){
+      expectMsgPF(){
         case DiscoveryComplete(location) => location should be ("http://192.168.1.70:1400/xml/device_description.xml")
         case _ => fail()
       }
