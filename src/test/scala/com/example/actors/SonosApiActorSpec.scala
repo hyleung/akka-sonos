@@ -1,17 +1,17 @@
 package com.example.actors
 
-import akka.actor.Status.Failure
-import akka.actor.{Props, Actor, ActorSystem}
+import akka.actor.{Actor, ActorSystem, Props}
 import akka.http.scaladsl.model._
-import akka.testkit.{TestActorRef, ImplicitSender, TestKit}
-import com.example.protocol.SonosProtocol.{SonosError, ZoneResponse, ZoneQuery}
-import com.example.sonos.{ZoneGroupMember, ZoneGroup}
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
-import scala.concurrent.duration._
-import scala.language.postfixOps
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
+import akka.testkit.{ImplicitSender, TestActorRef, TestKit}
+import com.example.http.HttpClient
+import com.example.protocol.SonosProtocol.{SonosError, ZoneQuery, ZoneResponse}
+import com.example.sonos.{SonosResponseParser, ZoneGroup, ZoneGroupMember}
 import org.scalamock.scalatest.MockFactory
+import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.language.postfixOps
 
 /**
  * Created with IntelliJ IDEA.
@@ -33,7 +33,7 @@ class SonosApiActorSpec(_system: ActorSystem)
 			stub()
 		}
 	}
-	trait MockParser extends BodyParser {
+	trait MockParser extends SonosResponseParser {
 		override def parseZoneResponse(body: String): Seq[ZoneGroup] = List(ZoneGroup(List(ZoneGroupMember("foo",Uri("http://127.0.0.1")))))
 	}
 	class TestSonosApiActor(ip:String)
