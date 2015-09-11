@@ -10,7 +10,7 @@ import akka.io.Udp
 import akka.util.ByteString
 import com.example.protocol.DiscoveryProtocol
 import DiscoveryProtocol._
-import com.example.ssdp.{SSDPDatagram, SSDPDiscoveryNotification, SSDPDiscoveryRequest}
+import com.example.ssdp.{SSDPDiscoveryClient, SSDPDatagram, SSDPDiscoveryNotification, SSDPDiscoveryRequest}
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -107,18 +107,3 @@ object DiscoveryActor {
 	def props(address: String, port: Int, udp: ActorRef) = Props(new DiscoveryActor(address, None, port, udp))
 }
 
-trait SSDPDiscoveryClient {
-	val SEARCH = SSDPDiscoveryRequest(Map(
-		"HOST" -> "239.255.255.250:1900",
-		"MAN" -> "\"ssdp:discover\"",
-		"MX" -> "1",
-		"ST" -> " urn:schemas-upnp-org:device:ZonePlayer:1"
-	)).serialize
-
-	def sendSearchDatagram(actor: ActorRef, socket: InetSocketAddress): Unit = {
-		val data: ByteString = ByteString(SEARCH, "UTF-8")
-		actor ! Udp.Send(data, socket)
-		actor ! Udp.Send(data, socket)
-		actor ! Udp.Send(data, socket)
-	}
-}

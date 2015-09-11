@@ -7,7 +7,7 @@ import akka.io.Udp
 import akka.testkit._
 import akka.util.ByteString
 import com.example.protocol.DiscoveryProtocol._
-import com.example.ssdp.{SSDPDatagram, SSDPDiscoveryNotification, SSDPDiscoveryRequest}
+import com.example.ssdp.{SSDPDiscoveryClient, SSDPDatagram, SSDPDiscoveryNotification, SSDPDiscoveryRequest}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
