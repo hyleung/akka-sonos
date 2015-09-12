@@ -2,15 +2,16 @@ package com.example.actors
 
 import java.net.URI
 
-import akka.actor.{ActorRef, ActorSystem}
+import akka.actor.{PoisonPill, ActorRef, ActorSystem}
 import akka.testkit.{TestProbe, TestActorRef, ImplicitSender, TestKit}
 import com.example.protocol.ApiProtocol.{ZonesResponse, ZonesRequest}
 import com.example.protocol.DiscoveryProtocol.{DiscoveryComplete, StartDiscovery}
 import com.example.protocol.SonosProtocol.{ZoneResponse, ZoneQuery}
 import com.example.sonos.ZoneGroup
+import com.typesafe.config.ConfigFactory
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
-
+import akka.testkit.EventFilter
 /**
  * Created with IntelliJ IDEA.
  * Date: 15-09-11
@@ -27,7 +28,8 @@ class ApiBridgeSpec(_system: ActorSystem) extends TestKit(_system)
 	val stubCreateDiscoveryActor = stubFunction[String,String,Int,ActorRef]
 	val stubCreateSonosApiActor = stubFunction[URI,ActorRef]
 
-	def this() = this(ActorSystem("SSDPDiscoveryClientSpec"))
+	def this() = this(ActorSystem("SSDPDiscoveryClientSpec", ConfigFactory.parseString("""
+  akka.loggers = ["akka.testkit.TestEventListener"]""")))
 
 	override def afterAll {
 		TestKit.shutdownActorSystem(system)
@@ -66,6 +68,18 @@ class ApiBridgeSpec(_system: ActorSystem) extends TestKit(_system)
 			apiActor ! ZoneResponse(zoneGroups)
 			expectMsg(ZonesResponse(zoneGroups))
 		}
+		"log if any other message is received" in {
+			val apiActor = TestActorRef(new TestApiBridge)
+			val sonosApiProbe = TestProbe()
+			val zoneGroups = List.empty[ZoneGroup]
+			stubCreateDiscoveryActor.when(*, *, *).returns(TestProbe().ref)
+			stubCreateSonosApiActor.when(*).returns(sonosApiProbe.ref)
+			apiActor ! ZonesRequest()
+			apiActor ! DiscoveryComplete("anylocation")
+			EventFilter.warning(occurrences = 1) intercept {
+				apiActor ! OtherMessage()
+			}
+		}
 	}
 
 	trait StubActorCreator extends ApiBridgeActorCreator { this: ApiBridge =>
@@ -77,5 +91,6 @@ class ApiBridgeSpec(_system: ActorSystem) extends TestKit(_system)
 
 	class TestApiBridge extends ApiBridge with StubActorCreator
 
+	case class OtherMessage()
 
 }
