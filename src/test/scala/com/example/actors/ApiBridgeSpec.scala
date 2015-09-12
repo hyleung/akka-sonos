@@ -4,9 +4,10 @@ import java.net.URI
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.testkit.{TestProbe, TestActorRef, ImplicitSender, TestKit}
-import com.example.protocol.ApiProtocol.ZonesRequest
+import com.example.protocol.ApiProtocol.{ZonesResponse, ZonesRequest}
 import com.example.protocol.DiscoveryProtocol.{DiscoveryComplete, StartDiscovery}
-import com.example.protocol.SonosProtocol.ZoneQuery
+import com.example.protocol.SonosProtocol.{ZoneResponse, ZoneQuery}
+import com.example.sonos.ZoneGroup
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
@@ -51,6 +52,19 @@ class ApiBridgeSpec(_system: ActorSystem) extends TestKit(_system)
 			apiActor ! ZonesRequest()
 			apiActor ! DiscoveryComplete(expectedLocation)
 			sonosApiProbe.expectMsg(ZoneQuery())
+		}
+	}
+	"When awaiting zone response" should {
+		"send zone response to sender" in {
+			val apiActor = TestActorRef(new TestApiBridge)
+			val sonosApiProbe = TestProbe()
+			val zoneGroups = List.empty[ZoneGroup]
+			stubCreateDiscoveryActor.when(*, *, *).returns(TestProbe().ref)
+			stubCreateSonosApiActor.when(*).returns(sonosApiProbe.ref)
+			apiActor ! ZonesRequest()
+			apiActor ! DiscoveryComplete("anylocation")
+			apiActor ! ZoneResponse(zoneGroups)
+			expectMsg(ZonesResponse(zoneGroups))
 		}
 	}
 
