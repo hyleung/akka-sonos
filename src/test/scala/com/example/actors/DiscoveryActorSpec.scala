@@ -8,6 +8,7 @@ import akka.testkit._
 import akka.util.ByteString
 import com.example.protocol.DiscoveryProtocol._
 import com.example.ssdp.{SSDPDiscoveryClient, SSDPDatagram, SSDPDiscoveryNotification, SSDPDiscoveryRequest}
+import com.typesafe.config.ConfigFactory
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
@@ -20,7 +21,8 @@ with Matchers
 with MockFactory
 with BeforeAndAfterAll {
 
-	def this() = this(ActorSystem("DiscoveryActorSpec"))
+	def this() = this(ActorSystem("DiscoveryActorSpec", ConfigFactory.parseString("""
+  akka.loggers = ["akka.testkit.TestEventListener"]""")))
 
 	override def afterAll {
 		TestKit.shutdownActorSystem(system)
@@ -71,6 +73,21 @@ with BeforeAndAfterAll {
 			actor ! StartDiscovery()
 			actor ! Udp.Bound(local)
 			actor ! OnTimeout()
+		}
+	}
+
+	"DiscoveryActor" must {
+		"log if unable to deserialize sonos response" in {
+			val udp = TestProbe()
+			val stubSsdpClient = stubFunction[Unit]
+			val actor = TestActorRef(new TestDiscoveryActor(stubSsdpClient,udp.ref))
+			val local = InetSocketAddress.createUnresolved("localhost", 1900)
+			val remote = InetSocketAddress.createUnresolved("remote", 1900)
+			actor ! StartDiscovery()
+			actor ! Udp.Bound(local)
+			EventFilter.warning(occurrences = 1) intercept {
+				actor ! Udp.Received(ByteString("Sonos", "UTF-8"), local)
+			}
 		}
 	}
 
