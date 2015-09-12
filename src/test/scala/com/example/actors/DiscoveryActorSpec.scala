@@ -102,6 +102,17 @@ with BeforeAndAfterAll {
 			actor ! Udp.Unbind
 			expectMsg(Udp.Unbind)
 		}
+		"send udp unbound" in {
+			val udp = TestProbe()
+			val stubSsdpClient = stubFunction[Unit]
+			val actor = TestActorRef(new TestDiscoveryActor(stubSsdpClient,udp.ref))
+			val local = InetSocketAddress.createUnresolved("localhost", 1900)
+			val remote = InetSocketAddress.createUnresolved("remote", 1900)
+			actor ! StartDiscovery()
+			actor ! Udp.Bound(local)
+			actor ! Udp.Unbound
+			//how to assert stop?
+		}
 	}
 
 	trait MockSsdpClient extends SSDPDiscoveryClient {
