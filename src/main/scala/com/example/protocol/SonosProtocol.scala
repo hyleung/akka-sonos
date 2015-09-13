@@ -8,8 +8,13 @@ import com.example.sonos.ZoneGroup
  * Time: 9:43 PM
  * To change this template use File | Settings | File Templates.
  */
+
+sealed trait SonosRequest {}
+
+sealed trait SonosResponse {}
+
 object SonosProtocol {
-	case class SonosError()
-	case class ZoneQuery()
-	case class ZoneResponse(zoneGroups:Seq[ZoneGroup])
+	case class SonosError() extends SonosResponse
+	case class ZoneQuery() extends SonosRequest
+	case class ZoneResponse(zoneGroups:Seq[ZoneGroup]) extends SonosResponse
 }

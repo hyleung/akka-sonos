@@ -6,7 +6,7 @@ import akka.actor.{ActorLogging, PoisonPill, ActorRef, Actor}
 import akka.io.{Udp, IO}
 import com.example.protocol.DiscoveryProtocol.{DiscoveryComplete, StartDiscovery}
 import com.example.protocol.SonosProtocol.{ZoneResponse, ZoneQuery}
-import com.example.protocol.ApiProtocol.{ZonesResponse, ZonesRequest}
+import com.example.protocol.{SonosResponse, SonosRequest}
 
 /**
  * Created by hyleung on 15-07-24.
@@ -19,21 +19,21 @@ class ApiBridge extends Actor with ActorLogging with ApiBridgeActorCreator {
 	var sonosApiUri: URI = null
 
 	override def receive: Receive = {
-		case ZonesRequest() =>
+		case r:SonosRequest =>
 			createDiscoveryActor(MULTICAST_ADDR, "en0", MULTICAST_PORT) ! StartDiscovery()
-			context.become(awaitingDiscovery(sender()))
+			context.become(awaitingDiscovery(sender(), r))
 	}
 
-	def awaitingDiscovery(sender: ActorRef): Receive = {
+	def awaitingDiscovery(sender: ActorRef, pendingRequest:SonosRequest): Receive = {
 		case DiscoveryComplete(location) =>
 			sonosApiUri = URI.create(location)
-			createSonosApiActor(sonosApiUri) ! ZoneQuery()
+			createSonosApiActor(sonosApiUri) ! pendingRequest
 			context.become(awaitingResponse(sender))
 	}
 
 	def awaitingResponse(sender: ActorRef): Receive = {
-		case ZoneResponse(body) =>
-			sender ! ZonesResponse(body)
+		case r:SonosResponse =>
+			sender ! r
 			context.become(receive)
 		case other => log.warning(s"Unexpected message: ${other.toString}")
 	}

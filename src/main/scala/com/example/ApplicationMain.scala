@@ -11,7 +11,7 @@ import akka.pattern.ask
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
 import com.example.actors.ApiBridge
-import com.example.protocol.ApiProtocol.{ZonesRequest, ZonesResponse}
+import com.example.protocol.SonosProtocol.{ZoneResponse, ZoneQuery}
 import com.example.sonos.{ZoneGroup, ZoneGroupMember}
 import com.typesafe.scalalogging.LazyLogging
 import spray.json._
@@ -29,8 +29,8 @@ object ApplicationMain extends App with LazyLogging with Protocols {
 		path("") {
 			get {
 				complete {
-					(apiActor ? ZonesRequest()).map[JsValue] {
-						case ZonesResponse(g) => g.toJson
+					(apiActor ? ZoneQuery()).map[JsValue] {
+						case ZoneResponse(g) => g.toJson
 					}
 				}
 			}

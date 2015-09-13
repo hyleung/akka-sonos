@@ -2,9 +2,8 @@ package com.example.actors
 
 import java.net.URI
 
-import akka.actor.{PoisonPill, ActorRef, ActorSystem}
+import akka.actor.{ActorRef, ActorSystem}
 import akka.testkit.{TestProbe, TestActorRef, ImplicitSender, TestKit}
-import com.example.protocol.ApiProtocol.{ZonesResponse, ZonesRequest}
 import com.example.protocol.DiscoveryProtocol.{DiscoveryComplete, StartDiscovery}
 import com.example.protocol.SonosProtocol.{ZoneResponse, ZoneQuery}
 import com.example.sonos.ZoneGroup
@@ -40,7 +39,7 @@ class ApiBridgeSpec(_system: ActorSystem) extends TestKit(_system)
 			val apiActor = TestActorRef(new TestApiBridge)
 			val discoveryProbe = TestProbe()
 			stubCreateDiscoveryActor.when(*, *, *).returns(discoveryProbe.ref)
-			apiActor ! ZonesRequest()
+			apiActor ! ZoneQuery()
 			discoveryProbe.expectMsg(StartDiscovery())
 		}
 	}
@@ -51,7 +50,7 @@ class ApiBridgeSpec(_system: ActorSystem) extends TestKit(_system)
 			val expectedLocation = "somelocation"
 			stubCreateDiscoveryActor.when(*, *, *).returns(TestProbe().ref)
 			stubCreateSonosApiActor.when(*).returns(sonosApiProbe.ref)
-			apiActor ! ZonesRequest()
+			apiActor ! ZoneQuery()
 			apiActor ! DiscoveryComplete(expectedLocation)
 			sonosApiProbe.expectMsg(ZoneQuery())
 		}
@@ -63,10 +62,10 @@ class ApiBridgeSpec(_system: ActorSystem) extends TestKit(_system)
 			val zoneGroups = List.empty[ZoneGroup]
 			stubCreateDiscoveryActor.when(*, *, *).returns(TestProbe().ref)
 			stubCreateSonosApiActor.when(*).returns(sonosApiProbe.ref)
-			apiActor ! ZonesRequest()
+			apiActor ! ZoneQuery()
 			apiActor ! DiscoveryComplete("anylocation")
 			apiActor ! ZoneResponse(zoneGroups)
-			expectMsg(ZonesResponse(zoneGroups))
+			expectMsg(ZoneResponse(zoneGroups))
 		}
 		"log if any other message is received" in {
 			val apiActor = TestActorRef(new TestApiBridge)
@@ -74,7 +73,7 @@ class ApiBridgeSpec(_system: ActorSystem) extends TestKit(_system)
 			val zoneGroups = List.empty[ZoneGroup]
 			stubCreateDiscoveryActor.when(*, *, *).returns(TestProbe().ref)
 			stubCreateSonosApiActor.when(*).returns(sonosApiProbe.ref)
-			apiActor ! ZonesRequest()
+			apiActor ! ZoneQuery()
 			apiActor ! DiscoveryComplete("anylocation")
 			EventFilter.warning(occurrences = 1) intercept {
 				apiActor ! OtherMessage()
