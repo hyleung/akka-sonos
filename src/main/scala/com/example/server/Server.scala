@@ -41,7 +41,7 @@ trait Server extends Protocols {
 trait Protocols extends DefaultJsonProtocol {
 	implicit object uriFormat extends RootJsonFormat[Uri] {
 		override def write(obj: Uri): JsValue = JsString(obj.toString())
-		override def read(json: JsValue): Uri = Uri(json.toString())
+		override def read(json: JsValue): Uri = Uri(json.asInstanceOf[JsString].value)
 	}
 	implicit val zoneGroupMemberFormat:RootJsonFormat[ZoneGroupMember] = jsonFormat(ZoneGroupMember,"name", "uri")
 	implicit val zoneGroupFormat:RootJsonFormat[ZoneGroup] = jsonFormat(ZoneGroup,"zone_members")
