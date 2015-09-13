@@ -34,7 +34,7 @@ class ApiBridge extends Actor with ActorLogging with ApiBridgeActorCreator {
 	def awaitingResponse(sender: ActorRef): Receive = {
 		case ZoneResponse(body) =>
 			sender ! ZonesResponse(body)
-			self ! PoisonPill
+			context.become(receive)
 		case other => log.warning(s"Unexpected message: ${other.toString}")
 	}
 }
