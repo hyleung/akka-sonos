@@ -17,7 +17,7 @@ import akka.testkit.EventFilter
  * Time: 5:10 PM
  * To change this template use File | Settings | File Templates.
  */
-class ApiBridgeSpec(_system: ActorSystem) extends TestKit(_system)
+class ApiActorSpec(_system: ActorSystem) extends TestKit(_system)
 	with ImplicitSender
 	with WordSpecLike
 	with Matchers
