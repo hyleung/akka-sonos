@@ -2,16 +2,17 @@ package com.example.actors
 
 import java.net.URI
 
-import akka.actor.{ActorLogging, PoisonPill, ActorRef, Actor}
-import akka.io.{Udp, IO}
+import akka.actor.{Actor, ActorLogging, ActorRef}
+import akka.io.{IO, Udp}
 import com.example.protocol.DiscoveryProtocol.{DiscoveryComplete, StartDiscovery}
-import com.example.protocol.SonosProtocol.{ZoneResponse, ZoneQuery}
-import com.example.protocol.{SonosResponse, SonosRequest}
+import com.example.protocol.ApiActorProtocol._
+import com.example.protocol.SonosProtocol.ZoneQuery
+import com.example.protocol.SonosRequest
 
 /**
  * Created by hyleung on 15-07-24.
  */
-class ApiBridge extends Actor with ActorLogging with ApiBridgeActorCreator {
+class ApiActor extends Actor with ActorLogging with ApiBridgeActorCreator {
 	implicit val _ = context.system
 	val MULTICAST_ADDR = "239.255.255.250"
 	val MULTICAST_PORT = 0
@@ -19,28 +20,33 @@ class ApiBridge extends Actor with ActorLogging with ApiBridgeActorCreator {
 	var sonosApiUri: URI = null
 
 	override def receive: Receive = {
-		case r:SonosRequest =>
+		case s:SonosRequest =>
 			createDiscoveryActor(MULTICAST_ADDR, "en0", MULTICAST_PORT) ! StartDiscovery()
-			context.become(awaitingDiscovery(sender(), r))
+			context.become(awaitingDiscovery(sender(), s))
 	}
 
-	def awaitingDiscovery(sender: ActorRef, pendingRequest:SonosRequest): Receive = {
+	def awaitingDiscovery(sender:ActorRef, pendingRequest: SonosRequest): Receive = {
 		case DiscoveryComplete(location) =>
 			sonosApiUri = URI.create(location)
-			createSonosApiActor(sonosApiUri) ! pendingRequest
-			context.become(awaitingResponse(sender))
+			context.become(discoveryComplete(sender))
+			self ! pendingRequest
+
 	}
 
-	def awaitingResponse(sender: ActorRef): Receive = {
-		case r:SonosResponse =>
-			sender ! r
-			context.become(receive)
-		case other => log.warning(s"Unexpected message: ${other.toString}")
+	def discoveryComplete(sender:ActorRef):Receive = {
+		case GetZones() =>
+			createSonosApiActor(sonosApiUri) ! ZoneQuery(sender)
+			context.become(ready)
+	}
+
+	def ready:Receive = {
+		case GetZones() => createSonosApiActor(sonosApiUri) ! ZoneQuery(sender())
+
 	}
 }
 
 trait ApiBridgeActorCreator {
-	this: ApiBridge =>
+	this: ApiActor =>
 	def createDiscoveryActor(multicastAddress: String, interface: String, multicastPort: Int): ActorRef =
 		context.actorOf(DiscoveryActor.props(multicastAddress, interface, multicastPort, IO(Udp)))
 
@@ -48,6 +54,6 @@ trait ApiBridgeActorCreator {
 		context.actorOf(SonosApiActor.props(s"http://${sonosApiUri.getHost}:${sonosApiUri.getPort}"))
 }
 
-object ApiBridge {
+object ApiActor {
 
 }

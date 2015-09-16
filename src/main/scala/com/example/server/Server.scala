@@ -7,7 +7,8 @@ import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.server.Directives._
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
-import com.example.actors.ApiBridge
+import com.example.actors.{ApiActor, ApiActor$}
+import com.example.protocol.ApiActorProtocol.GetZones
 import com.example.protocol.SonosProtocol.{ZoneResponse, ZoneQuery}
 import com.example.sonos.{ZoneGroup, ZoneGroupMember}
 import spray.json._
@@ -25,12 +26,12 @@ trait Server extends Protocols {
 	implicit val system = ActorSystem("SonosApiBridge")
 	implicit val materializer = ActorMaterializer()
 	implicit val timeout:Timeout = Timeout(5000, TimeUnit.MILLISECONDS)
-	val apiActor = system.actorOf(Props[ApiBridge])
+	val apiActor = system.actorOf(Props[ApiActor])
 	val route =
 		path("") {
 			get {
 				complete {
-					(apiActor ? ZoneQuery()).map[JsValue] {
+					(apiActor ? GetZones()).map[JsValue] {
 						case ZoneResponse(g) => g.toJson
 					}
 				}

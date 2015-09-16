@@ -1,5 +1,6 @@
 package com.example.protocol
 
+import akka.actor.ActorRef
 import com.example.sonos.ZoneGroup
 
 /**
@@ -9,12 +10,10 @@ import com.example.sonos.ZoneGroup
  * To change this template use File | Settings | File Templates.
  */
 
-sealed trait SonosRequest {}
 
-sealed trait SonosResponse {}
 
 object SonosProtocol {
-	case class SonosError() extends SonosResponse
-	case class ZoneQuery() extends SonosRequest
-	case class ZoneResponse(zoneGroups:Seq[ZoneGroup]) extends SonosResponse
+	case class SonosError()
+	case class ZoneQuery(sender:ActorRef) extends SonosRequest
+	case class ZoneResponse(zoneGroups:Seq[ZoneGroup])
 }

@@ -24,16 +24,15 @@ class SonosApiActor(baseUri: String)
     with HttpClient
     with SonosResponseParser {
   override def receive: Receive = {
-    case ZoneQuery() => {
+    case ZoneQuery(sender) => {
       val message = SonosCommand("ZoneGroupTopology", 1, "GetZoneGroupState", Map.empty)
       val entity: Strict = HttpEntity(ContentType(MediaTypes.`text/xml`), message.soapXml.toString())
       val headers: List[RawHeader] = List(RawHeader(SonosCommand.SOAP_ACTION_HEADER, message.actionHeader))
-      val s = sender()
       execPost(s"$baseUri/ZoneGroupTopology/Control", entity, headers).map{
         case (Success(_), body)  => {
-            s ! ZoneResponse(parseZoneResponse(body))
+            sender ! ZoneResponse(parseZoneResponse(body))
         }
-        case (code ,_) if code.isFailure() => s ! SonosError()
+        case (code ,_) if code.isFailure() => sender ! SonosError()
       }
     }
     case _ => ???

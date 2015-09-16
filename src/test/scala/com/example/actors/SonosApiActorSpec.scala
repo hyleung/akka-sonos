@@ -2,7 +2,7 @@ package com.example.actors
 
 import akka.actor.{Actor, ActorSystem, Props}
 import akka.http.scaladsl.model._
-import akka.testkit.{ImplicitSender, TestActorRef, TestKit}
+import akka.testkit.{TestProbe, ImplicitSender, TestActorRef, TestKit}
 import com.example.http.HttpClient
 import com.example.protocol.SonosProtocol.{SonosError, ZoneQuery, ZoneResponse}
 import com.example.sonos.{SonosResponseParser, ZoneGroup, ZoneGroupMember}
@@ -50,8 +50,9 @@ class SonosApiActorSpec(_system: ActorSystem)
 		"respond to ZoneQuery success" in  {
 			stub.when().returns((StatusCodes.OK,"foo"))
 			val apiActor = TestActorRef(TestSonosApiActor.props("127.0.01"))
-			apiActor ! ZoneQuery()
-			this.expectMsgPF() {
+			val sender = TestProbe()
+			apiActor ! ZoneQuery(sender.ref)
+			sender.expectMsgPF() {
 				case ZoneResponse(r) => r.nonEmpty
 				case _ => fail()
 			}
@@ -59,8 +60,9 @@ class SonosApiActorSpec(_system: ActorSystem)
 		"raise error for ZoneQuery InternalServerError" in {
 			stub.when().returns((StatusCodes.InternalServerError,"error"))
 			val apiActor = TestActorRef(TestSonosApiActor.props("127.0.01"))
-			apiActor ! ZoneQuery()
-			this.expectMsgPF() {
+			val sender = TestProbe()
+			apiActor ! ZoneQuery(sender.ref)
+			sender.expectMsgPF() {
 				case SonosError() => true
 				case _ => fail()
 			}
@@ -68,8 +70,9 @@ class SonosApiActorSpec(_system: ActorSystem)
 		"raise error for ZoneQuery ClientError" in {
 			stub.when().returns((StatusCodes.BadRequest,"error"))
 			val apiActor = TestActorRef(TestSonosApiActor.props("127.0.01"))
-			apiActor ! ZoneQuery()
-			this.expectMsgPF() {
+			val sender = TestProbe()
+			apiActor ! ZoneQuery(sender.ref)
+			sender.expectMsgPF() {
 				case SonosError() => true
 				case _ => fail()
 			}
