@@ -34,7 +34,7 @@ class SonosApiActorSpec(_system: ActorSystem)
 		}
 	}
 	trait MockParser extends SonosResponseParser {
-		override def parseZoneResponse(body: String): Seq[ZoneGroup] = List(ZoneGroup(List(ZoneGroupMember("foo",Uri("http://127.0.0.1")))))
+		override def parseZoneResponse(body: String): Seq[ZoneGroup] = List(ZoneGroup(List(ZoneGroupMember("foo",Uri("http://127.0.0.1"))), "coordinator-id"))
 	}
 	class TestSonosApiActor(ip:String)
 		extends SonosApiActor(ip)

@@ -45,6 +45,6 @@ trait Protocols extends DefaultJsonProtocol {
 		override def read(json: JsValue): Uri = Uri(json.asInstanceOf[JsString].value)
 	}
 	implicit val zoneGroupMemberFormat:RootJsonFormat[ZoneGroupMember] = jsonFormat(ZoneGroupMember,"name", "uri")
-	implicit val zoneGroupFormat:RootJsonFormat[ZoneGroup] = jsonFormat(ZoneGroup,"zone_members")
+	implicit val zoneGroupFormat:RootJsonFormat[ZoneGroup] = jsonFormat(ZoneGroup,"zone_members", "coordinator")
 }
 

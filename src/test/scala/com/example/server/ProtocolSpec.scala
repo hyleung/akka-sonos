@@ -34,7 +34,7 @@ class ProtocolSpec extends FlatSpec with Matchers with Protocols{
 	}
 	behavior of "zone group  format"
 	it should "serialize to json" in {
-		val data = ZoneGroup(List(ZoneGroupMember("foo",Uri("http://localhost:8080"))))
+		val data = ZoneGroup(List(ZoneGroupMember("foo",Uri("http://localhost:8080"))), "coordinator-id")
 		val serialized = data.toJson
 		serialized should not be null
 	}

@@ -19,7 +19,8 @@ trait SonosResponseParser {
 
   def zoneGroupFromNode(groupNode:Node):ZoneGroup = {
     val members = (groupNode \\ "ZoneGroupMember").map(groupMemberFromNode)
-    ZoneGroup(members)
+    val coordinator = (groupNode \ "@Coordinator").text
+    ZoneGroup(members, coordinator)
   }
 
   def groupMemberFromNode(memberNode:Node):ZoneGroupMember = {
